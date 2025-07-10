@@ -36,6 +36,15 @@ void setup() {
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
+  //get avialiable memory
+  Serial.printf("Total heap: %u bytes\n", ESP.getHeapSize());
+  Serial.printf("Free heap: %u bytes\n", ESP.getFreeHeap());
+  Serial.printf("Total PSRAM:%u bytes\n", ESP.getPsramSize());
+  Serial.printf("Free PSRAM:%u bytes\n", ESP.getFreePsram());
+
+  //freeing neccesary PSRAM
+  byte* psdRamBuffer = (byte*)ps_malloc(882000);
+
   server.begin();
 }
 

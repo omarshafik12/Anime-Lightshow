@@ -47,10 +47,11 @@ void setup_i2s(){
 
 /*
 Remaining Tasks:
-1. impletement a buffer within PSRAM to hold 5 second audio clip
-2. Ensuring that data is feed at a continous and that there is headroom for delays or variances
-3. Decide upon having a second mic to have lights sync with beat of song
-4. Wav file conversion post TinyML acceptance
-5. Completing memory allocation diagram
-6. Testing various memory in ESP32, especially the SRAM and if it is able to withstand the memory demand of said program
+1. implement the ability for DMA to transfer to PSRAM
+2. Figure out how to lower interrupt amounts
+3. Ensuring that data is feed at a continous and that there is headroom for delays or variances
+4. Decide upon having a second mic to have lights sync with beat of song
+5. Wav file conversion post TinyML acceptance
+6. Completing memory allocation diagram
+7. Testing various memory in ESP32, especially the SRAM and if it is able to withstand the memory demand of said program
 */
