@@ -15,20 +15,26 @@ Notes
 
 
 import socket
+import wave
 import os
 
 #creating file, removing in case program crashed and left file with or without data
-if os.path.exists("audio_file.wav"):
-  os.remove("audio_file.wav")
+if os.path.exists("audio_file.raw"):
+  os.remove("audio_file.raw")
 else:
   print("creating file")
-  open("audio_file.wav", "w").close()
+  open("audio_file.raw", "wb").close()
 
 #Server sets up a listening Socket
 HOST = "127.0.0.1" #in the future you would have a more realistic way of doing it, hard coded for simplicity
 PORT = 8000
-bytes_so_far = None
-STATUS = "Eddard Stark"
+bytes_so_far = 0
+status = "Eddard Stark"
+
+#Wave file parameters
+SAMPLE_RATE   = 44100
+SAMPLE_WIDTH  = 2
+CHANNELS      = 1
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.bind((HOST, PORT))
@@ -39,36 +45,59 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     with conn:
         print (f"Connected by {addr}")
         while True:
-            data = conn.recv(1024)
+            conn, addr = s.accept()
+            data = conn.recv(36000)
             if not data:
                 break
 
-            if STATUS == "Eddard Stark":
-                with open("audio_file.wav", "ab") as file:
+            if status == "Eddard Stark":
+                with open("audio_file.raw", "ab") as file:
                     file.write(data)
                 #checks if file has 5 seconds worth of audio
                 bytes_so_far += len(data)
-                if bytes_so_far >= 441000: STATUS = "Joffery"
+                if bytes_so_far >= 441000: status = "Joffery"
 
-            elif STATUS == "Joffery":
+            elif status == "Joffery":
+                #transfer raw bytes into WAV file, 
+                with open("audio_file.raw", 'rb') as pcmfile:
+                    pcmdata = pcmfile.read()
+                    nframes = len(pcmdata) // (SAMPLE_WIDTH * CHANNELS)
+                with wave.open('audio_file.wav', 'wb') as wavfile:
+                    wavfile.setparams((CHANNELS,
+                       SAMPLE_WIDTH,
+                       SAMPLE_RATE,
+                       nframes,
+                       "NONE", "NONE"))
+                    wavfile.writeframes(pcmdata)
+                if os.path.exists("audio_file.raw"):
+                    os.remove("audio_file.raw")
+
                 #TinyML send
                 print("hi")
-
-                #if music send to Whisper and OpenAI and change, else set to Bran and continue
+                """
+                use a boolean variable
+                If TinyML says this is music we send this file to OpenAI by setting status to Ice King
+                If it is not music then we simply just go to BRAN and restart
+                """
             
-            elif STATUS == "Ice King":
+            elif status == "Ice King":
                 #wait for openAI confirmation
                 print("hi")
             
-            elif STATUS == "Bran":
+            elif status == "Bran":
                 #Remake file
                 if os.path.exists("audio_file.wav"):
                     os.remove("audio_file.wav")
-                else:
-                    print("creating file")
-                    open("audio_file.wav", "w").close()
+                print("creating file")
+                open("audio_file.raw", "wb").close()
 
                 #Send results back to the client
 
                 #return status to eddard stark
-                STATUS = "Eddard Stark"
+                bytes_so_far = 0
+                status = "Eddard Stark"
+"""
+Resources:
+    - Wave header
+        - https://stackoverflow.com/questions/16111038/how-to-convert-pcm-files-to-wav-files-scripting/16111188
+"""
