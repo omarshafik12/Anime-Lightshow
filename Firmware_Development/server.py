@@ -17,6 +17,8 @@ Notes
 import socket
 import wave
 import os
+import whisper
+import openai
 
 #creating file, removing in case program crashed and left file with or without data
 if os.path.exists("audio_file.raw"):
@@ -24,6 +26,9 @@ if os.path.exists("audio_file.raw"):
 else:
   print("creating file")
   open("audio_file.raw", "wb").close()
+
+#loading whipser model
+model = whisper.load_model("base")
 
 #Server sets up a listening Socket
 HOST = "127.0.0.1" #in the future you would have a more realistic way of doing it, hard coded for simplicity
@@ -36,6 +41,16 @@ SAMPLE_RATE   = 44100
 SAMPLE_WIDTH  = 2
 CHANNELS      = 1
 
+#accessing openai gpt-4o model to dechiper the present anime
+openai.api_key = os.getenv("OPENAI_API_KEY")
+def figure_out_anime(prompt):
+    response = openai.ChatCompletion.create(
+        model = "gpt-4o",
+        messages = [{"role":"user", "content": f"Based of the lyrics of below, please only return the string, One Piece, Naruto, My Hero Academia if it matches the lyrics of one of their anime openings, else return just the string None. Lyrics: {prompt}"}]
+    )
+
+    return response.choices[0].message.content.strip()
+
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.bind((HOST, PORT))
     s.listen()
@@ -45,7 +60,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     with conn:
         print (f"Connected by {addr}")
         while True:
-            conn, addr = s.accept()
             data = conn.recv(36000)
             if not data:
                 break
@@ -82,7 +96,26 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             
             elif status == "Ice King":
                 #wait for openAI confirmation
-                print("hi")
+                # load audio and pad/trim it to fit 30 seconds
+                audio = whisper.load_audio("audio_file.wav")
+                audio = whisper.pad_or_trim(audio)
+
+                # make log-Mel spectrogram and move to the same device as the model
+                mel = whisper.log_mel_spectrogram(audio, n_mels=model.dims.n_mels).to(model.device)
+
+                # detect the spoken language
+                _, probs = model.detect_language(mel)
+                print(f"Detected language: {max(probs, key=probs.get)}")
+
+                # decode the audio
+                options = whisper.DecodingOptions()
+                result = whisper.decode(model, mel, options)
+
+                #result.text is what you send to openai or append to string that you send to openai
+                figure_out_anime(result.text)
+
+                #resetting 
+                status = "Bran"
             
             elif status == "Bran":
                 #Remake file
@@ -100,4 +133,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 Resources:
     - Wave header
         - https://stackoverflow.com/questions/16111038/how-to-convert-pcm-files-to-wav-files-scripting/16111188
+
+    - Whisper prereqs:
+        - https://github.com/openai/whisper
+        - Need to pip install whipser and download ffmpeg, and my need to install rust as well.
 """
