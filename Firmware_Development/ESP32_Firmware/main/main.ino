@@ -3,38 +3,60 @@ This was orginally boiler plate from the examples provided by the ESP32 Dev Boar
 */
 
 #include <WiFi.h>
-#include <WiFiClientSecure.h>
-#include <HTTPClient.h> 
+#include <WiFiClient.h>
+#include <Arduino.h>
+#include "main.hpp"
 
+WiFiClient client;
 const char *ssid = "";
-const char *password = "";
-const char *apiKey = ""
 
-WiFiServer server(80);
+int status = WL_IDLE_STATUS;
+IPAddress server(1,1,1,1); //dummy IP
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
 
-  delay(10);
+  Serial.println("Attempting to connect to WPA network...");
 
-  // We start by connecting to a WiFi network
+  Serial.print("SSID: ");
 
-  Serial.println();
-  Serial.println();
-  Serial.print("Connecting to ");
   Serial.println(ssid);
 
-  WiFi.begin(ssid, password);
 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+  status = WiFi.begin(ssid, pass);
+
+  if ( status != WL_CONNECTED) {
+
+    Serial.println("Couldn't get a wifi connection");
+
+    // don't do anything else:
+
+    while(true);
+
   }
 
-  Serial.println("");
-  Serial.println("WiFi connected.");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
+  else {
+
+    Serial.println("Connected to wifi");
+
+    Serial.println("\nStarting connection...");
+
+    // if you get a connection, report back via serial:
+
+    if (client.connect(server, 8000)) {
+
+      Serial.println("connected");
+
+      // Make a HTTP request:
+
+      client.println("GET /search?q=arduino HTTP/1.0");
+
+      client.println();
+
+    }
+
+  }
+  setup_i2s();
 
   //get avialiable memory
   Serial.printf("Total heap: %u bytes\n", ESP.getHeapSize());
@@ -42,25 +64,37 @@ void setup() {
   Serial.printf("Total PSRAM:%u bytes\n", ESP.getPsramSize());
   Serial.printf("Free PSRAM:%u bytes\n", ESP.getFreePsram());
 
-  //freeing neccesary PSRAM
-  byte* psdRamBuffer = (byte*)ps_malloc(882000);
-
   server.begin();
 }
 
 void loop() {
-  if (WiFi.status() != WL_CONNECTED) {
-    HTTPClient http;
 
-    http.begin(client, "https://api.openai.com/v1/audio/transcriptions");
-    http.addHeader("Content-Type", "application/json");
+  while(client1.connected()){
+    if (client.available()) {
+    // https://docs.arduino.cc/language-reference/en/functions/wifi/client/?utm_source=chatgpt.com#returns-2
+    // https://forum.arduino.cc/t/esp-32-wifi-client-write-buffer-size-unexpected-disconnetion-of-a-client/639193?utm_source=chatgpt.com
 
-    int httpResponse = http.POST(openai payload);
+    client.write(sBuffer)//work on this more 
 
-    if (httpResponse > 0) {
-      String response = http.getString();
-    } else {
-      Serial.print("Error involving post request")
+    char c = client.read();
+
+    Serial.print(c);
+
     }
+  }
+
+
+  if (!client.connected()) {
+
+    Serial.println();
+
+    Serial.println("disconnecting.");
+
+    client.stop();
+
+    for(;;)
+
+      ;
+
   }
 }

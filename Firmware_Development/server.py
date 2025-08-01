@@ -19,6 +19,7 @@ import wave
 import os
 import whisper
 import openai
+from dotenv import load_dotenv
 
 #creating file, removing in case program crashed and left file with or without data
 if os.path.exists("audio_file.raw"):
@@ -42,7 +43,8 @@ SAMPLE_WIDTH  = 2
 CHANNELS      = 1
 
 #accessing openai gpt-4o model to dechiper the present anime
-openai.api_key = os.getenv("OPENAI_API_KEY")
+load_dotenv() 
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 def figure_out_anime(prompt):
     response = openai.ChatCompletion.create(
         model = "gpt-4o",
@@ -112,7 +114,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 result = whisper.decode(model, mel, options)
 
                 #result.text is what you send to openai or append to string that you send to openai
-                figure_out_anime(result.text)
+                answer = figure_out_anime(result.text)
 
                 #resetting 
                 status = "Bran"
