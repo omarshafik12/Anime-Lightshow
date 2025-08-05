@@ -76,6 +76,7 @@ void loop() {
 
     client.write(sBuffer)//work on this more 
 
+    // after getting the sBuffer try breaking it down into chunks for faster packet transfers.
     char c = client.read();
 
     Serial.print(c);
